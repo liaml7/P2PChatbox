@@ -1,4 +1,0 @@
-//NOTHING YET...
-void main(){
-	
-}

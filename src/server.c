@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	int portno = 110;
 	socklen_t clilen;
 	char buffer[256];
-	printf(argv[1]);
 	struct sockaddr_in serv_addr, cli_addr;
 	int n;
 	if (portno < 2) {
