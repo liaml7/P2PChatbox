@@ -1,15 +1,17 @@
-char *fileRead(char *filename, char *result){
-	char str[1024], ch;
-	int i=0;
+const char *fileRead(char *filename){
+	char str[256], ch;
+	int i;
+	i=0;
 	FILE *fp;
 	fp = fopen(filename, "r");
 	if(fp){
-		fgets(str, 1024, fp);
+		while ((ch = getc(fp)) != EOF){
+			str[i++] = ch;
+		}
 		fclose(fp);
 		if(str[strlen(str)-1] == '\n')
 			str[strlen(str)-1] = 0;
-		result = str;
-		return result;
+		return str;
 	}
 	else{
 		return NULL;

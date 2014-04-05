@@ -1,31 +1,22 @@
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+#include "socket.h"
+#include "echo.h"
 #include "error.h"
 #include "crypt.h"
 #include "file.h"
-#include "echo.h"
 
 void *client(void* v){
 	int sockfd, portno, n, x;
-	char message[256], *host, ch;
+	char message[256], ch;
+	const char *host;
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
 	printf("Enter a message: ");
 	scanf("%s", message);
-	portno = 111;
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	portno = socketGetPort();
+	sockfd = socketCreate();
 	checkError(sockfd, "ERROR opening socket");
-	host = fileRead("tracker.txt", host);
-	echo(host);
-	host = "localhost";
-	echo(host);
+	host = fileRead("tracker.txt");
 	server = gethostbyname(host);
 	checkNNull(server, "ERROR, no such host");
 	bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -33,15 +24,15 @@ void *client(void* v){
 	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(portno);
 	checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
-	n = write(sockfd,message,strlen(message));
+	n = socketWrite(sockfd,message);
 	checkError(n, "ERROR writing to socket"); 
 	bzero(message,256);
-	n = read(sockfd,message,255);
+	n = socketRead(sockfd,message);
 	checkError(n, "ERROR reading from socket");
 	echo(message);
-	close(sockfd);
+	socketClose(sockfd);
 	for(x = 0; x < 1; x++){
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		sockfd = socketCreate();
 		checkError(sockfd, "ERROR opening socket");
 		strcpy(message, "test");
 		server = gethostbyname(host);
@@ -51,20 +42,20 @@ void *client(void* v){
 		bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 		serv_addr.sin_port = htons(portno);
 		checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
-		n = write(sockfd,message,strlen(message));
+		n = socketWrite(sockfd,message);
 		checkError(n, "ERROR writing to socket");
 		bzero(message,256);
-		n = read(sockfd,message,255);
+		n = socketRead(sockfd,message);
 		checkError(n, "ERROR reading from socket");
 		echo(message);
-		close(sockfd);
+		socketClose(sockfd);
 	}
 }
 
 void *server(void* v){
 	int sockfd, newsockfd, portno, n, x;
 	char buffer[256];
-	portno = 111;
+	portno = socketGetPort();
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,7 +78,8 @@ void *server(void* v){
 		if(strncmp(buffer,"fetch",5) == 0){
 			printf("Fetching \n");
 		}
-		n = write(newsockfd,"I got your message",18);
+		strcat(buffer, " is your message");
+		n = write(newsockfd,buffer,255);
 		checkError(sockfd, "ERROR writing to socket");
 	}
 	close(newsockfd);
