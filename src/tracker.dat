@@ -1,1 +1,2 @@
-localhost
+ host: localhost
+ port: 110
