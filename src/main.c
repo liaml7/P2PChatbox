@@ -5,20 +5,46 @@
 #include "crypt.h"
 #include "file.h"
 
+
+void *client(void* v);
+void *server(void* v);
+
+void main(){
+	//create two threads for client and server, join causes a wait until both threads end
+	pthread_t clientthread, serverthread;
+	pthread_create(&clientthread, NULL, client, NULL);
+	pthread_create(&serverthread, NULL, server, NULL);
+	pthread_join(clientthread, NULL);
+	pthread_join(serverthread, NULL);
+}
+
+
 void *client(void* v){
 	int sockfd, portno, n, x;
+	char host[BUFSIZ];
 	char message[256], ch;
-	const char *host;
+
 	struct sockaddr_in serv_addr;
+
 	struct hostent *server;
-	printf("Enter a message: ");
-	scanf("%s", message);
-	portno = socketGetPort();
-	sockfd = socketCreate();
-	checkError(sockfd, "ERROR opening socket");
-	host = fileRead("tracker.txt");
+
+	fileRead(host);
+	printf("%s\n", host);
+	
 	server = gethostbyname(host);
+
+	printf("Enter a message: ");
+
+	scanf("%s", message);
+
+	portno = socketGetPort();
+
+	sockfd = socketCreate();
+
+	checkError(sockfd, "ERROR opening socket");
+
 	checkNNull(server, "ERROR, no such host");
+	
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
@@ -51,6 +77,7 @@ void *client(void* v){
 		socketClose(sockfd);
 	}
 }
+
 
 void *server(void* v){
 	int sockfd, newsockfd, portno, n, x;
@@ -85,13 +112,4 @@ void *server(void* v){
 	close(newsockfd);
 	close(sockfd);
 	exit(0);
-}
-
-void main(){
-	//create two threads for client and server, join causes a wait until both threads end
-	pthread_t clientthread, serverthread;
-	pthread_create(&clientthread, NULL, client, NULL);
-	pthread_create(&serverthread, NULL, server, NULL);
-	pthread_join(clientthread, NULL);
-	pthread_join(serverthread, NULL);
 }
