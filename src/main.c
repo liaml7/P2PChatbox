@@ -45,14 +45,14 @@ void *client(void* v){
 
 	checkNNull(server, "ERROR, no such host");
 	
-	bzero((char *) &serv_addr, sizeof(serv_addr));
+	memset((char *) &serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+	memcpy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(portno);
 	checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
 	n = socketWrite(sockfd,message);
 	checkError(n, "ERROR writing to socket"); 
-	bzero(message,256);
+	memset(message, 0, 256);
 	n = socketRead(sockfd,message);
 	checkError(n, "ERROR reading from socket");
 	echo(message);
@@ -63,14 +63,14 @@ void *client(void* v){
 		strcpy(message, "test");
 		server = gethostbyname(host);
 		checkNNull(server, "ERROR, no such host");
-		bzero((char *) &serv_addr, sizeof(serv_addr));
+		memset((char *) &serv_addr, 0, sizeof(serv_addr));
 		serv_addr.sin_family = AF_INET;
-		bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+		memcpy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 		serv_addr.sin_port = htons(portno);
 		checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
 		n = socketWrite(sockfd,message);
 		checkError(n, "ERROR writing to socket");
-		bzero(message,256);
+		memset(message, 0, 256);
 		n = socketRead(sockfd,message);
 		checkError(n, "ERROR reading from socket");
 		echo(message);
@@ -87,7 +87,7 @@ void *server(void* v){
 	struct sockaddr_in serv_addr, cli_addr;
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	checkError(sockfd, "ERROR opening socket");
-	bzero((char *) &serv_addr, sizeof(serv_addr));
+	memset((char *) &serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
@@ -98,7 +98,7 @@ void *server(void* v){
 		//wait for socket reply
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 		checkError(newsockfd, "ERROR on accept");
-		bzero(buffer,256);
+		memset(buffer, 0, 256);
 		//read data from socket and save to buffer variable
 		n = read(newsockfd,buffer,255);
 		checkError(n, "ERROR reading from socket");
