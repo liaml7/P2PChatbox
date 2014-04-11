@@ -1,4 +1,7 @@
 #include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "socket.h"
 #include "echo.h"
 #include "error.h"
@@ -19,38 +22,43 @@ void main(){
 
 
 void *client(void* v){
+	//ENCRYPTION VARS
+	char * encrypt_handle = NULL;
+	char * decrypt_handle = NULL;
+	result encrypt_result;
+	result decrypt_result;
+	const char * data_to_encrypt = "This is an encryption test";
+	size_t data_to_encrypt_length = strlen(data_to_encrypt);
+	char password[256] = "testtesttest";
+	size_t password_length = strlen(password);
+	const char * decrypted_data;
+	size_t decrypted_data_size;
+	const char * encrypted_data;
+	size_t encryped_data_size;
+	
 	int sockfd, portno, n, x;
 	char host[BUFSIZ];
 	char message[256], ch;
-
+	getChatPassword(password);
+	password_length = strlen(password);
 	struct sockaddr_in serv_addr;
-
 	struct hostent *server;
-
-	readFile("tracker.dat", host);
-	
+	getHost(host);
 	server = gethostbyname(host);
-
 	printf("Enter a message: ");
-
 	scanf("%s", message);
-
 	portno = socketGetPort();
-
 	sockfd = socketCreate();
-
 	checkError(sockfd, "ERROR opening socket");
-
 	checkNNull(server, "ERROR, no such host");
-	
-	bzero((char *) &serv_addr, sizeof(serv_addr));
+	memset((char *) &serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+	memcpy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(portno);
 	checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
 	n = socketWrite(sockfd,message);
 	checkError(n, "ERROR writing to socket"); 
-	bzero(message,256);
+	memset(message, 0, 256);
 	n = socketRead(sockfd,message);
 	checkError(n, "ERROR reading from socket");
 	echo(message);
@@ -61,14 +69,21 @@ void *client(void* v){
 		strcpy(message, "test");
 		server = gethostbyname(host);
 		checkNNull(server, "ERROR, no such host");
-		bzero((char *) &serv_addr, sizeof(serv_addr));
+		memset((char *) &serv_addr, 0, sizeof(serv_addr));
 		serv_addr.sin_family = AF_INET;
-		bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+		memcpy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 		serv_addr.sin_port = htons(portno);
 		checkError(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)), "ERROR connecting");
+		//ENCRYPT MESSAGE
+		if(encrypt(&encrypt_handle,data_to_encrypt,data_to_encrypt_length,password,password_length,&encrypt_result)){
+			encrypted_data = encrypt_result.buffer;
+			encryped_data_size = encrypt_result.length;
+		}else{echo("data encryption failed");}
+		////////////////////////////////////////////////////////////////////////////
+		//NEED TO REPLACE THE message VAR WITH THE encrypted_data FROM ABOVE
 		n = socketWrite(sockfd,message);
 		checkError(n, "ERROR writing to socket");
-		bzero(message,256);
+		memset(message, 0, 256);
 		n = socketRead(sockfd,message);
 		checkError(n, "ERROR reading from socket");
 		echo(message);
@@ -85,7 +100,7 @@ void *server(void* v){
 	struct sockaddr_in serv_addr, cli_addr;
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	checkError(sockfd, "ERROR opening socket");
-	bzero((char *) &serv_addr, sizeof(serv_addr));
+	memset((char *) &serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
@@ -96,7 +111,7 @@ void *server(void* v){
 		//wait for socket reply
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 		checkError(newsockfd, "ERROR on accept");
-		bzero(buffer,256);
+		memset(buffer, 0, 256);
 		//read data from socket and save to buffer variable
 		n = read(newsockfd,buffer,255);
 		checkError(n, "ERROR reading from socket");
